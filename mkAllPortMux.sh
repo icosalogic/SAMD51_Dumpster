@@ -7,14 +7,14 @@
 # This script should be run in the folder containing SAMD51_Dumpster.h.
 #
 # This script emits one include file for each CPU variant file found in the include/pio
-# folder, and the file named "portmux.h", which includes each of the CPU variant files.
-# SAMD51_Dumpster.h includes portmux.h, so most users will not even know these files
+# folder, and also emits "portmux.h", which includes each of the emitted CPU variant files.
+# SAMD51_Dumpster.cpp includes portmux.h, so most users will not even know these files
 # exist, much less subject themselves to the trauma of figuring out what they do.
 #
 # If you are fastidious about keeping everything up-to-date, you should run these scripts
 # every time you you update the Arduino boards package for the SAMD51 board you use.  After
 # running this script, you may want to restart Arduino, just to make sure it picks up the
-# updated header files.
+# updated library header files.
 
 date_time=$(date '+%Y%m%d_%H%M%S_%N' )
 date_time2=$(date '+%Y-%m-%d %H:%M:%S %Z' )

@@ -20,7 +20,7 @@ The PORT dump in particular has a really nice lookup table for mapping [port,mux
 values to the peripheral signals using that port.
 
 # Usage
-Here is an example of basic usage:
+Here is an example of basic usage.
 
 `
 #include <SAMD51_Dumpster.h>

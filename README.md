@@ -1,7 +1,7 @@
 # SAMD51_Dumpster
 Dumps low level attributes of many SAMD51 peripherals.
 
-Sorry folks, yet another library for dumping microprocessor internals.
+Sorry folks, yet another library for dumping SAMD51 microprocessor internals.
 Until the perfect library exists, I guess we will keep creating more.
 
 # Peripherals
@@ -28,16 +28,16 @@ SAMD51_Dumpster ilsd;
 
 void setup() {
   ilsd.begin(false);
-  ...
+  // other code here...
   ilsd.dumpTCC("Before Step X");
-  ...
+  // other code here...
   ilsd.dumpTCC("After Step X");
-  ...
-  ilsd.dumpADC(null); 
+  // other code here...
+  ilsd.dumpADC(NULL); 
 }
 
 void loop() {
-...
+  // other code here...
 }
 `
 

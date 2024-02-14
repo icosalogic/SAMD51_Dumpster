@@ -1,0 +1,87 @@
+#######################################
+# Syntax Coloring Map For Ethernet
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+SAMD51_Dumpster	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+dumpArray	KEYWORD2
+dumpPort	KEYWORD2
+dumpPortGroup	KEYWORD2
+dumpGCLK	KEYWORD2
+dumpGCLKGenerators	KEYWORD2
+dumpGCLKUsers	KEYWORD2
+dumpGclkGenctrl	KEYWORD2
+dumpGclkPchctrl	KEYWORD2
+dumpMCLK	KEYWORD2
+dumpMclkAHB	KEYWORD2
+dumpMclkAPBA	KEYWORD2
+dumpMclkAPBB	KEYWORD2
+dumpMclkAPBC	KEYWORD2
+dumpMclkAPBD	KEYWORD2
+dumpSERCOM	KEYWORD2
+dumpSercomInstance	KEYWORD2
+dumpSercomUsart	KEYWORD2
+dumpSercomSpi	KEYWORD2
+dumpSercomI2cs	KEYWORD2
+dumpSercomI2cm	KEYWORD2
+dumpTC	KEYWORD2
+dumpTcInstance	KEYWORD2
+dumpTCC	KEYWORD2
+dumpTccInstance	KEYWORD2
+dumpTccInstance310	KEYWORD2
+dumpEVSYS	KEYWORD2
+dumpEvChannel	KEYWORD2
+dumpEvUser	KEYWORD2
+dumpDMAC	KEYWORD2
+dumpDmacChannel	KEYWORD2
+dumpDmacDesc	KEYWORD2
+dumpADC	KEYWORD2
+dumpAdcInstance	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+gclkSrcName	LITERAL1
+gclkUserName	LITERAL1
+tccCcNum	LITERAL1
+tccWaveGenNames	LITERAL1
+tcPrescalars	LITERAL1
+tcWaves	LITERAL1
+evGenNames	LITERAL1
+evUserNames	LITERAL1
+evPathNames	LITERAL1
+beatSizes	LITERAL1
+crcPolyNames	LITERAL1
+crcSrcNames	LITERAL1
+crcModeNames	LITERAL1
+priQosNames	LITERAL1
+trigSrcNames	LITERAL1
+trigActNames	LITERAL1
+thresholdSizes	LITERAL1
+dmacCmdNames	LITERAL1
+dmacChEvActNames	LITERAL1
+dmacChEvOutModeNames	LITERAL1
+dmacDescEvoSelNames	LITERAL1
+dmacDescBlkActNames	LITERAL1
+dmacStepSelNames	LITERAL1
+powersOf2	LITERAL1
+adcPrescalerSizes	LITERAL1
+adcDualSelNames	LITERAL1
+adcMuxPosNames	LITERAL1
+adcMuxNegNames	LITERAL1
+adcResSelSizes	LITERAL1
+adcWinModeNames	LITERAL1
+adcRefSelNames	LITERAL1
+usartChsize	LITERAL1
+usartPmode	LITERAL1
+i2cmBusState	LITERAL1

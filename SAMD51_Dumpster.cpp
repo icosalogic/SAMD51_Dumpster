@@ -233,7 +233,7 @@ void SAMD51_Dumpster::dumpMclkAPBD() {
 /*
  * Dumps all the SERCOM instances.
  * 
- * Page numbers for SERCOM register descriptions:
+ * Documentation page numbers for SERCOM register descriptions:
  * UART: 851
  * SPI:  889
  * I2C:  928

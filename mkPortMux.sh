@@ -94,8 +94,8 @@ END              {
                    printf("const uint16_t portMuxUserMap[numPortMuxUserMap] = {\n");
                    
                    max_ports = 64;
-                   if (max_port_seen > 96) max_ports = 128;
                    if (max_port_seen > 64) max_ports = 96;
+                   if (max_port_seen > 96) max_ports = 128;
                    max_mux = 16;
                    
                    for (nport = 0; nport < max_ports; nport++) {

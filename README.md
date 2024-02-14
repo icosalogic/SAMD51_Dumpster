@@ -22,7 +22,7 @@ values to the peripheral signals using that port.
 # Usage
 Here is an example of basic usage.
 
-`
+```C++
 #include <SAMD51_Dumpster.h>
 SAMD51_Dumpster ilsd;
 
@@ -39,7 +39,7 @@ void setup() {
 void loop() {
   // other code here...
 }
-`
+```
 
 By default, the library will operate in terse mode, and will not dump data for
 peripherals with an ENABLE flag that is not set.  You can override this behavior
@@ -49,15 +49,15 @@ flag, so you can call it repeatedly with no adverse side effects.
 If you are interested in a single peripheral instance, say, TC3, instead
 of calling
 
-`
-  ilsd.dumpTC();
-`
+```
+  ilsd.dumpTC(NULL);
+```
 
 which will dump all the enabled TC instances, you can call
 
-`
+```
   ilsd.dumpTCInstance(3);
-`
+```
 
 Note that the enabled/verbose check is done in the instance calls, so it will
 generate no output if a peripheral is not ENABLED, and verbose is false.

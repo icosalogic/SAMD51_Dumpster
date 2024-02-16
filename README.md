@@ -12,7 +12,8 @@ of peripherals.
 
 - PORTS
 - GCLK
-- SERCOM (buggy)
+- MCLK
+- SERCOM
 - TC
 - TCC
 - DMAC

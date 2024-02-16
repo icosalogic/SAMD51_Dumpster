@@ -36,10 +36,10 @@ public:
   
   void dumpSERCOM(const char* msg);
   void dumpSercomInstance(int n);
-  void dumpSercomUsart(SercomUsart* scu);
-  void dumpSercomSpi(SercomSpi* scs);
-  void dumpSercomI2cs(SercomI2cs* sci);
-  void dumpSercomI2cm(SercomI2cm* sci);
+  void dumpSercomUsart(Sercom* sc);
+  void dumpSercomSpi(Sercom* sc);
+  void dumpSercomI2cs(Sercom* sc);
+  void dumpSercomI2cm(Sercom* sc);
   
   void dumpTC(const char* msg);
   void dumpTcInstance(int n);

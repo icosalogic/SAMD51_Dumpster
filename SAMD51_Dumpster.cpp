@@ -41,12 +41,13 @@ void SAMD51_Dumpster::dumpPortGroup(int groupNum) {
   const char* groupName[4] = {"A", "B", "C", "D"};
   const char* evAct[4] = {"OUT", "SET", "CLR", "TGL"};
   PortGroup* pg = &(PORT->Group[groupNum]);
+
   uint32_t dir    = pg->DIR.reg;
   uint32_t out    = pg->OUT.reg;
   uint32_t in     = pg->IN.reg;
   uint32_t sample = pg->CTRL.reg;
   const char* gName = groupName[groupNum];
-  Serial.printf("PORT GROUP %d %s\n", groupNum, gName);
+  Serial.printf("PORT GROUP %d %s 0x%x\n", groupNum, gName, pg);
   PORT_EVCTRL_Type evctrl;
   evctrl.reg = pg->EVCTRL.reg;
   Serial.printf("    EVCTRL 0: portei=%d evact=%d [%s] %d\n",
@@ -70,7 +71,7 @@ void SAMD51_Dumpster::dumpPortGroup(int groupNum) {
     Serial.printf("pmuxen=%d inen=%d pullen=%d drvstr=%d",
                   cfg.bit.PMUXEN, cfg.bit.INEN, cfg.bit.PULLEN, cfg.bit.DRVSTR);
     if (cfg.bit.PMUXEN) {
-      Serial.printf(" mux_user=%s", getPortMuxUserName(portNum, mux.bit.PMUXE));
+      Serial.printf(" %s", getPortMuxUserName(portNum, mux.bit.PMUXE));
     }
     Serial.printf("\n");
     dir    >>= 1;
@@ -187,10 +188,14 @@ void SAMD51_Dumpster::dumpMCLK(const char* msg) {
     Serial.printf(" %s", msg);
   }
   Serial.printf("\n");
-  
+  MCLK_INTENSET_Type intenset;
+  MCLK_INTFLAG_Type intflag;
+  intenset.reg = REG_MCLK_INTENSET;
+  intflag.reg = REG_MCLK_INTFLAG;
   uint8_t hsdiv = REG_MCLK_HSDIV;
   uint8_t cpudiv = REG_MCLK_CPUDIV;
-  Serial.printf("  hsdiv=0X%02x cpudiv=0X%02x\n", hsdiv, cpudiv);
+  Serial.printf("  intenset.ckrdy=%d intflag.ckrdy=%d hsdiv=0x%02x (%d) cpudiv=0x%02x (%d)\n",
+                intenset.bit.CKRDY, intflag.bit.CKRDY, hsdiv, hsdiv, cpudiv, cpudiv);
   
   dumpMclkAHB();
   dumpMclkAPBA();
@@ -199,35 +204,77 @@ void SAMD51_Dumpster::dumpMCLK(const char* msg) {
   dumpMclkAPBD();
 }
 
+/*
+ * Dump the AHB MCLK configuration register.
+ */
 void SAMD51_Dumpster::dumpMclkAHB() {
   MCLK_AHBMASK_Type ahb;
   ahb.reg = REG_MCLK_AHBMASK;
   
-  Serial.printf("  AHB: HPB0/APBA=%d  HPB1/APBB=%d  HPB2/APBC=%d  HPB3/APBD=%d\n",
-                ahb.bit.HPB0_, ahb.bit.HPB1_, ahb.bit.HPB2_, ahb.bit.HPB3_);
-  // To be continued....
-  // To be continued....
+  // No CAN0/1 or GMAC for SAMD51
+  Serial.printf("  AHB:  0x%06x hpb0[APBA]=%d hpb1[APBB]=%d hpb2[APBC]=%d hpb3[APBD]=%d dsu=%d ",
+                ahb.reg, ahb.bit.HPB0_, ahb.bit.HPB1_, ahb.bit.HPB2_, ahb.bit.HPB3_,
+                ahb.bit.DSU_);
+  Serial.printf("nvmctrl=%d cmcc=%d dmac=%d usb=%d\n",
+                ahb.bit.NVMCTRL_, ahb.bit.CMCC_, ahb.bit.DMAC_, ahb.bit.USB_);
+  Serial.printf("                 pac=%d qspi=%d sdhc0=%d sdhc1=%d icm=%d ",
+                ahb.bit.PAC_, ahb.bit.QSPI_, ahb.bit.SDHC0_, ahb.bit.SDHC1_, ahb.bit.ICM_);
+  Serial.printf("pukcc=%d qspi2x=%d nvmctrl_smeeprom=%d nvmctrl_cache=%d\n",
+                ahb.bit.PUKCC_, ahb.bit.QSPI_2X_, ahb.bit.NVMCTRL_SMEEPROM_, ahb.bit.NVMCTRL_CACHE_);
 }
 
+/*
+ * Dump the APBA MCLK configuration register.
+ */
 void SAMD51_Dumpster::dumpMclkAPBA() {
-  
-  Serial.printf("  APBA: \n");
+  MCLK_APBAMASK_Type apba;
+  apba.reg = REG_MCLK_APBAMASK;
+  Serial.printf("  APBA: 0x%06x pac=%d pm=%d mclk=%d rstc=%d oscctrl=%d osc32kctrl=%d supc=%d ",
+                apba.reg, apba.bit.PAC_, apba.bit.PM_, apba.bit.MCLK_, apba.bit.RSTC_, apba.bit.OSCCTRL_,
+                apba.bit.OSC32KCTRL_, apba.bit.SUPC_);
+  Serial.printf("gclk=%d wdt=%d rtc=%d eic=%d freqm=%d sercom0=%d sercom1=%d tc0=%d tc1=%d\n",
+                apba.bit.GCLK_, apba.bit.WDT_, apba.bit.RTC_, apba.bit.EIC_, apba.bit.FREQM_,
+                apba.bit.SERCOM0_, apba.bit.SERCOM1_, apba.bit.TC0_, apba.bit.TC1_);
 }
 
+/*
+ * Dump the APBB MCLK configuration register.
+ */
 void SAMD51_Dumpster::dumpMclkAPBB() {
-  
-  Serial.printf("  APBB: \n");
+  MCLK_APBBMASK_Type apbb;
+  apbb.reg = REG_MCLK_APBBMASK;
+  Serial.printf("  APBB: 0x%06x usb=%d dsu=%d nvmctrl=%d port=%d evsys=%d sercom2=%d sercom3=%d ",
+                apbb.reg, apbb.bit.USB_, apbb.bit.DSU_, apbb.bit.NVMCTRL_, apbb.bit.PORT_,
+                apbb.bit.EVSYS_, apbb.bit.SERCOM2_, apbb.bit.SERCOM3_);
+  Serial.printf("tcc0=%d tcc1=%d tc2=%d tc3=%d ramecc=%d\n",
+                apbb.bit.TCC0_, apbb.bit.TCC1_, apbb.bit.TC2_, apbb.bit.TC3_, apbb.bit.RAMECC_);
 }
 
+/*
+ * Dump the APBC MCLK configuration register.
+ */
 void SAMD51_Dumpster::dumpMclkAPBC() {
-  
-  Serial.printf("  APBC: \n");
+  MCLK_APBCMASK_Type apbc;
+  apbc.reg = REG_MCLK_APBCMASK;
+  Serial.printf("  APBC: 0x%06x tcc2=%d tcc3=%d tc4=%d tc5=%d pdec=%d ac=%d aes=%d trng=%d ",
+                apbc.reg, apbc.bit.TCC2_, apbc.bit.TCC3_, apbc.bit.TC4_,
+                apbc.bit.TC5_, apbc.bit.PDEC_, apbc.bit.AC_, apbc.bit.AES_, apbc.bit.TRNG_);
+  Serial.printf("icm=%d qspi=%d ccl=%d\n",
+                apbc.bit.ICM_, apbc.bit.QSPI_, apbc.bit.CCL_);
 }
 
 
+/*
+ * Dump the APBD MCLK configuration register.
+ */
 void SAMD51_Dumpster::dumpMclkAPBD() {
-  
-  Serial.printf("  APBD: \n");
+  MCLK_APBDMASK_Type apbd;
+  apbd.reg = REG_MCLK_APBDMASK;
+  Serial.printf("  APBD: 0x%06x sercom4=%d sercom5=%d sercom6=%d sercom7=%d tcc4=%d tc6=%d tc7=%d ",
+                apbd.reg, apbd.bit.SERCOM4_, apbd.bit.SERCOM5_, apbd.bit.SERCOM6_, apbd.bit.SERCOM7_,
+                apbd.bit.TCC4_, apbd.bit.TC6_, apbd.bit.TC7_);
+  Serial.printf("adc0=%d adc1=%d dac=%d i2s=%d pcc=%d\n",
+                apbd.bit.ADC0_, apbd.bit.ADC1_, apbd.bit.DAC_, apbd.bit.I2S_, apbd.bit.PCC_);
 }
 
 /*
@@ -257,37 +304,34 @@ void SAMD51_Dumpster::dumpSercomInstance(int n) {
   if (n < 0 || n >= SERCOM_INST_NUM) {
     return;
   }
-  Sercom* instances[] = SERCOM_INSTS;
+  Sercom* instances[SERCOM_INST_NUM] = SERCOM_INSTS;
   Sercom* sc = instances[n];
-  SercomUsart* scu = &sc->USART;
-  
-  // Serial.printf("  Sercom  sc=0x%x  scu=0x%x\n", sc, scu);
-  
+    
   bool myVerbose = verbose;
   
-  if (scu->CTRLA.bit.ENABLE || myVerbose) {
-    switch (scu->CTRLA.bit.MODE) {
+  if (sc->SPI.CTRLA.bit.ENABLE || myVerbose) {
+    switch (sc->SPI.CTRLA.bit.MODE) {
       case 0:  // USART with external clock
       case 1:  // USART with internal clock
-        Serial.printf("SERCOM%d: USART\n", n);
-        dumpSercomUsart(scu);
+        Serial.printf("SERCOM%d: USART 0x%x\n", n, sc);
+        dumpSercomUsart(sc);
         break;
       case 2:  // SPI peripheral
       case 3:  // SPI controller
-        Serial.printf("SERCOM%d: SPI\n", n);
-        dumpSercomSpi(&sc->SPI);
+        Serial.printf("SERCOM%d: SPI 0x%x\n", n, sc);
+        dumpSercomSpi(sc);
         break;
       case 4:  // I2C peripheral
-        Serial.printf("SERCOM%d: I2CS\n", n);
-        dumpSercomI2cs(&sc->I2CS);
+        Serial.printf("SERCOM%d: I2CS 0x%x\n", n, sc);
+        dumpSercomI2cs(sc);
         break;
       case 5:  // I2C controller
-        Serial.printf("SERCOM%d: I2CM\n", n);
-        dumpSercomI2cm(&sc->I2CM);
+        Serial.printf("SERCOM%d: I2CM 0x%x\n", n, sc);
+        dumpSercomI2cm(sc);
         break;
       default:
-        Serial.printf("SERCOM%d: invalid mode=0x%x (%d)\n",
-                     n, scu->CTRLA.bit.MODE, scu->CTRLA.bit.MODE);
+        Serial.printf("SERCOM%d: invalid mode=%d\n",
+                      n, sc->SPI.CTRLA.bit.MODE);
         break;
     }
   Serial.printf("\n");
@@ -297,9 +341,9 @@ void SAMD51_Dumpster::dumpSercomInstance(int n) {
 /*
  * Dump a SERCOM/USART object.
  */
-void SAMD51_Dumpster::dumpSercomUsart(SercomUsart* scu) {
+void SAMD51_Dumpster::dumpSercomUsart(Sercom* sc) {
   SERCOM_USART_CTRLA_Type ctrla;
-  ctrla.reg = scu->CTRLA.reg;
+  ctrla.reg = sc->USART.CTRLA.reg;
   Serial.printf("  CTRLA: 0x%x swrst %d enable %d mode %d runstdby %d ",
                 ctrla.reg, ctrla.bit.SWRST, ctrla.bit.ENABLE, ctrla.bit.MODE, ctrla.bit.RUNSTDBY);
   Serial.printf("ibon=%d txinv=%d rxinv=%d sampr=%d\n",
@@ -309,7 +353,7 @@ void SAMD51_Dumpster::dumpSercomUsart(SercomUsart* scu) {
                 ctrla.bit.CMODE, ctrla.bit.CPOL, ctrla.bit.DORD);
                 
   SERCOM_USART_CTRLB_Type ctrlb;
-  ctrlb.reg = scu->CTRLB.reg;
+  ctrlb.reg = sc->USART.CTRLB.reg;
   Serial.printf("  CTRLB: 0x%x chsize=%d [%s] sbmode=%d [%dbit] colden=%d ",
                 ctrlb.reg, ctrlb.bit.CHSIZE, usartChsize[ctrlb.bit.CHSIZE], ctrlb.bit.SBMODE,
                 ctrlb.bit.SBMODE + 1, ctrlb.bit.COLDEN);
@@ -318,60 +362,60 @@ void SAMD51_Dumpster::dumpSercomUsart(SercomUsart* scu) {
                 ctrlb.bit.TXEN, ctrlb.bit.RXEN, ctrlb.bit.LINCMD);
   
   SERCOM_USART_CTRLC_Type ctrlc;
-  ctrlc.reg = scu->CTRLC.reg;
+  ctrlc.reg = sc->USART.CTRLC.reg;
   Serial.printf("  CTRLC: 0x%x gtime=%d brklen=%d hdrdly=%d ",
                 ctrlc.reg, ctrlc.bit.GTIME, ctrlc.bit.BRKLEN, ctrlc.bit.HDRDLY);
   Serial.printf("inack=%d dsnack=%d maxiter=%d data32b=%d\n", 
                 ctrlc.bit.INACK, ctrlc.bit.DSNACK, ctrlc.bit.MAXITER, ctrlc.bit.DATA32B);
   
   SERCOM_USART_BAUD_Type baud;
-  baud.reg = scu->BAUD.reg;
+  baud.reg = sc->USART.BAUD.reg;
   Serial.printf("  BAUD: 0x%x (%d) (%d.%d)\n", baud.reg, baud.reg, baud.FRAC.BAUD, baud.FRAC.FP);
   
-  Serial.printf("  RXPL: 0x%x (%d)\n", scu->RXPL.reg, scu->RXPL.reg);
+  Serial.printf("  RXPL: 0x%x (%d)\n", sc->USART.RXPL.reg, sc->USART.RXPL.reg);
   
   SERCOM_USART_INTENSET_Type intenset;
-  intenset.reg = scu->INTENSET.reg;
+  intenset.reg = sc->USART.INTENSET.reg;
   Serial.printf("  INTENSET: 0x%x dre=%d txc=%d rxc=%d rxs=%d ctsic=%d rxbrk=%d error=%d\n",
                 intenset.reg, intenset.bit.DRE, intenset.bit.TXC, intenset.bit.RXC,
                 intenset.bit.RXS, intenset.bit.CTSIC, intenset.bit.RXBRK, intenset.bit.ERROR);
   
   SERCOM_USART_INTFLAG_Type intflag;
-  intflag.reg = scu->INTFLAG.reg;
+  intflag.reg = sc->USART.INTFLAG.reg;
   Serial.printf("  INTFLAG: 0x%x dre=%d txc=%d rxc=%d rxs=%d ctsic=%d rxbrk=%d error=%d\n",
                 intflag.reg, intflag.bit.DRE, intflag.bit.TXC, intflag.bit.RXC,
                 intflag.bit.RXS, intflag.bit.CTSIC, intflag.bit.RXBRK, intflag.bit.ERROR);
   
   SERCOM_USART_STATUS_Type status;
-  status.reg = scu->STATUS.reg;
+  status.reg = sc->USART.STATUS.reg;
   Serial.printf("  STATUS: 0x%x perr=%d ferr=%d bufovf=%d cts=%d isf=%d coll=%d txe=%d iter=%d\n",
                 status.reg, status.bit.PERR, status.bit.FERR, status.bit.BUFOVF, status.bit.CTS,
                 status.bit.ISF, status.bit.COLL, status.bit.TXE, status.bit.ITER);
   
   SERCOM_USART_SYNCBUSY_Type sb;
-  sb.reg = scu->SYNCBUSY.reg;
+  sb.reg = sc->USART.SYNCBUSY.reg;
   Serial.printf("  SYNCBUSY: 0x%x swrst=%d enable=%d ctrlb=%d rxerrcnt=%d length=%d\n",
                 sb.reg, sb.bit.SWRST, sb.bit.ENABLE, sb.bit.CTRLB, sb.bit.RXERRCNT, sb.bit.LENGTH);
   
-  Serial.printf("  RXERRCNT: 0x%x (%d)\n", scu->RXERRCNT.reg, scu->RXERRCNT.reg);
+  Serial.printf("  RXERRCNT: 0x%x (%d)\n", sc->USART.RXERRCNT.reg, sc->USART.RXERRCNT.reg);
   
   SERCOM_USART_LENGTH_Type len;
-  len.reg = scu->LENGTH.reg;
+  len.reg = sc->USART.LENGTH.reg;
   Serial.printf("  LENGTH: 0x%x length=%d lenen=%d\n", len.reg, len.bit.LEN, len.bit.LENEN);
   
   SERCOM_USART_DATA_Type data;
-  data.reg = scu->DATA.reg;
+  data.reg = sc->USART.DATA.reg;
   Serial.printf("  DATA: 0x%x (%d)\n", data.reg, data.reg);
   
-  Serial.printf("  DBGCTRL: 0x%x dbgstop=%d\n", scu->DBGCTRL.reg, scu->DBGCTRL.bit.DBGSTOP);
+  Serial.printf("  DBGCTRL: 0x%x dbgstop=%d\n", sc->USART.DBGCTRL.reg, sc->USART.DBGCTRL.bit.DBGSTOP);
 }
 
 /*
  * Dump a SERCOM/SPI object.
  */
-void SAMD51_Dumpster::dumpSercomSpi(SercomSpi* scs) {
+void SAMD51_Dumpster::dumpSercomSpi(Sercom* sc) {
   SERCOM_SPI_CTRLA_Type ctrla;
-  ctrla.reg = scs->CTRLA.reg;
+  ctrla.reg = sc->SPI.CTRLA.reg;
   Serial.printf("  CTRLA: 0x%x swrst %d enable %d mode %d runstdby %d ",
                 ctrla.reg, ctrla.bit.SWRST, ctrla.bit.ENABLE, ctrla.bit.MODE, ctrla.bit.RUNSTDBY);
   Serial.printf("ibon=%d dopo=%d dipo=%d\n",
@@ -380,64 +424,64 @@ void SAMD51_Dumpster::dumpSercomSpi(SercomSpi* scs) {
                 ctrla.bit.FORM, ctrla.bit.CPHA, ctrla.bit.CPOL, ctrla.bit.DORD);
                 
   SERCOM_SPI_CTRLB_Type ctrlb;
-  ctrlb.reg = scs->CTRLB.reg;
+  ctrlb.reg = sc->SPI.CTRLB.reg;
   Serial.printf("  CTRLB: 0x%x chsize=%d [%s] ploaden=%d ssde=%d mssen=%d amode=%d rxen=%d\n",
                 ctrlb.reg, ctrlb.bit.CHSIZE, usartChsize[ctrlb.bit.CHSIZE], ctrlb.bit.PLOADEN,
                 ctrlb.bit.SSDE, ctrlb.bit.MSSEN, ctrlb.bit.AMODE, ctrlb.bit.RXEN);
   
   SERCOM_SPI_CTRLC_Type ctrlc;
-  ctrlc.reg = scs->CTRLC.reg;
+  ctrlc.reg = sc->SPI.CTRLC.reg;
   Serial.printf("  CTRLC: 0x%x icspace=%d data32b=%d\n", 
                 ctrlc.reg, ctrlc.bit.ICSPACE, ctrlc.bit.DATA32B);
   
   SERCOM_SPI_BAUD_Type baud;
-  baud.reg = scs->BAUD.reg;
+  baud.reg = sc->SPI.BAUD.reg;
   Serial.printf("  BAUD: 0x%x (%d)\n", baud.reg, baud.reg);
   
   SERCOM_SPI_INTENSET_Type intenset;
-  intenset.reg = scs->INTENSET.reg;
+  intenset.reg = sc->SPI.INTENSET.reg;
   Serial.printf("  INTENSET: 0x%x dre=%d txc=%d rxc=%d ssl=%d error=%d\n",
                 intenset.reg, intenset.bit.DRE, intenset.bit.TXC, intenset.bit.RXC,
                 intenset.bit.SSL, intenset.bit.ERROR);
   
   SERCOM_SPI_INTFLAG_Type intflag;
-  intflag.reg = scs->INTFLAG.reg;
+  intflag.reg = sc->SPI.INTFLAG.reg;
   Serial.printf("  INTFLAG: 0x%x dre=%d txc=%d rxc=%d ssl=%d error=%d\n",
                 intflag.reg, intflag.bit.DRE, intflag.bit.TXC, intflag.bit.RXC,
                 intflag.bit.SSL, intflag.bit.ERROR);
   
   SERCOM_SPI_STATUS_Type status;
-  status.reg = scs->STATUS.reg;
+  status.reg = sc->SPI.STATUS.reg;
   Serial.printf("  STATUS: 0x%x bufovf=%d lenerr=%d\n",
                 status.reg, status.bit.BUFOVF, status.bit.LENERR);
   
   SERCOM_SPI_SYNCBUSY_Type sb;
-  sb.reg = scs->SYNCBUSY.reg;
+  sb.reg = sc->SPI.SYNCBUSY.reg;
   Serial.printf("  SYNCBUSY: 0x%x swrst=%d enable=%d ctrlb=%d length=%d\n",
                 sb.reg, sb.bit.SWRST, sb.bit.ENABLE, sb.bit.CTRLB, sb.bit.LENGTH);
   
   SERCOM_SPI_LENGTH_Type len;
-  len.reg = scs->LENGTH.reg;
+  len.reg = sc->SPI.LENGTH.reg;
   Serial.printf("  LENGTH: 0x%x length=%d lenen=%d\n", len.reg, len.bit.LEN, len.bit.LENEN);
   
   SERCOM_SPI_ADDR_Type addr;
-  addr.reg = scs->ADDR.reg;
+  addr.reg = sc->SPI.ADDR.reg;
   Serial.printf("  ADDR: 0x%x addr 0x%x (%d) addrmask 0x%x (%d)\n",
                 addr.reg, addr.bit.ADDR, addr.bit.ADDR, addr.bit.ADDRMASK, addr.bit.ADDRMASK);
   
   SERCOM_SPI_DATA_Type data;
-  data.reg = scs->DATA.reg;
+  data.reg = sc->SPI.DATA.reg;
   Serial.printf("  DATA: 0x%x (%d)\n", data.reg, data.reg);
   
-  Serial.printf("  DBGCTRL: 0x%x dbgstop=%d\n", scs->DBGCTRL.reg, scs->DBGCTRL.bit.DBGSTOP);
+  Serial.printf("  DBGCTRL: 0x%x dbgstop=%d\n", sc->SPI.DBGCTRL.reg, sc->SPI.DBGCTRL.bit.DBGSTOP);
 }
 
 /*
- * Dump a SERCOM/I2C peripheral instance.
+ * Dump a SERCOM/I2C server peripheral instance.
  */
-void SAMD51_Dumpster::dumpSercomI2cs(SercomI2cs* sci) {
+void SAMD51_Dumpster::dumpSercomI2cs(Sercom* sc) {
   SERCOM_I2CS_CTRLA_Type ctrla;
-  ctrla.reg = sci->CTRLA.reg;
+  ctrla.reg = sc->I2CS.CTRLA.reg;
   Serial.printf("  CTRLA: 0x%x swrst %d enable %d mode %d runstdby %d ",
                 ctrla.reg, ctrla.bit.SWRST, ctrla.bit.ENABLE, ctrla.bit.MODE, ctrla.bit.RUNSTDBY);
   Serial.printf("pinout=%d sdahold=%d \n", ctrla.bit.PINOUT, ctrla.bit.SDAHOLD);
@@ -445,30 +489,30 @@ void SAMD51_Dumpster::dumpSercomI2cs(SercomI2cs* sci) {
                 ctrla.bit.SEXTTOEN, ctrla.bit.SPEED, ctrla.bit.SCLSM, ctrla.bit.LOWTOUTEN);
                 
   SERCOM_I2CS_CTRLB_Type ctrlb;
-  ctrlb.reg = sci->CTRLB.reg;
+  ctrlb.reg = sc->I2CS.CTRLB.reg;
   Serial.printf("  CTRLB: 0x%x smen=%d gcmd=%d aacken=%d amode=%d cmd=%d ackact=%d\n",
                 ctrlb.reg, ctrlb.bit.SMEN, ctrlb.bit.GCMD,
                 ctrlb.bit.AACKEN, ctrlb.bit.AMODE, ctrlb.bit.CMD, ctrlb.bit.ACKACT);
   
   SERCOM_I2CS_CTRLC_Type ctrlc;
-  ctrlc.reg = sci->CTRLC.reg;
+  ctrlc.reg = sc->I2CS.CTRLC.reg;
   Serial.printf("  CTRLC: 0x%x sdasetup=%d data32b=%d\n", 
                 ctrlc.reg, ctrlc.bit.SDASETUP, ctrlc.bit.DATA32B);
   
   SERCOM_I2CS_INTENSET_Type intenset;
-  intenset.reg = sci->INTENSET.reg;
+  intenset.reg = sc->I2CS.INTENSET.reg;
   Serial.printf("  INTENSET: 0x%x prec=%d amatch=%d drdy=%d error=%d\n",
                 intenset.reg, intenset.bit.PREC, intenset.bit.AMATCH, intenset.bit.DRDY,
                 intenset.bit.ERROR);
   
   SERCOM_I2CS_INTFLAG_Type intflag;
-  intflag.reg = sci->INTFLAG.reg;
+  intflag.reg = sc->I2CS.INTFLAG.reg;
   Serial.printf("  INTFLAG: 0x%x prec=%d amatch=%d drdy=%d error=%d\n",
                 intflag.reg, intflag.bit.PREC, intflag.bit.AMATCH, intflag.bit.DRDY,
                 intflag.bit.ERROR);
   
   SERCOM_I2CS_STATUS_Type status;
-  status.reg = sci->STATUS.reg;
+  status.reg = sc->I2CS.STATUS.reg;
   Serial.printf("  STATUS: 0x%x buserr=%d coll=%d rxnack=%d dir=%d sr=%d ",
                 status.reg, status.bit.BUSERR, status.bit.COLL, status.bit.RXNACK,
                 status.bit.DIR, status.bit.SR);
@@ -477,31 +521,31 @@ void SAMD51_Dumpster::dumpSercomI2cs(SercomI2cs* sci) {
                 status.bit.HS, status.bit.LENERR);
   
   SERCOM_I2CS_SYNCBUSY_Type sb;
-  sb.reg = sci->SYNCBUSY.reg;
+  sb.reg = sc->I2CS.SYNCBUSY.reg;
   Serial.printf("  SYNCBUSY: 0x%x swrst=%d enable=%d length=%d\n",
                 sb.reg, sb.bit.SWRST, sb.bit.ENABLE, sb.bit.LENGTH);
   
   SERCOM_I2CS_LENGTH_Type len;
-  len.reg = sci->LENGTH.reg;
+  len.reg = sc->I2CS.LENGTH.reg;
   Serial.printf("  LENGTH: 0x%x length=%d lenen=%d\n", len.reg, len.bit.LEN, len.bit.LENEN);
   
   SERCOM_I2CS_ADDR_Type addr;
-  addr.reg = sci->ADDR.reg;
+  addr.reg = sc->I2CS.ADDR.reg;
   Serial.printf("  ADDR: 0x%x gencen=%d addr 0x%x (%d) tenbiten=%d addrmask 0x%x (%d)\n",
                 addr.reg, addr.bit.GENCEN, addr.bit.ADDR, addr.bit.ADDR, addr.bit.TENBITEN,
                 addr.bit.ADDRMASK, addr.bit.ADDRMASK);
   
   SERCOM_I2CS_DATA_Type data;
-  data.reg = sci->DATA.reg;
+  data.reg = sc->I2CS.DATA.reg;
   Serial.printf("  DATA: 0x%x (%d)\n", data.reg, data.reg);
 }
 
 /*
  * Dump a SERCOM/I2C controller instance.
  */
-void SAMD51_Dumpster::dumpSercomI2cm(SercomI2cm* sci) {
+void SAMD51_Dumpster::dumpSercomI2cm(Sercom* sc) {
   SERCOM_I2CM_CTRLA_Type ctrla;
-  ctrla.reg = sci->CTRLA.reg;
+  ctrla.reg = sc->I2CM.CTRLA.reg;
   Serial.printf("  CTRLA: 0x%x swrst %d enable %d mode %d runstdby %d ",
                 ctrla.reg, ctrla.bit.SWRST, ctrla.bit.ENABLE, ctrla.bit.MODE, ctrla.bit.RUNSTDBY);
   Serial.printf("pinout=%d sdahold=%d \n", ctrla.bit.PINOUT, ctrla.bit.SDAHOLD);
@@ -510,31 +554,31 @@ void SAMD51_Dumpster::dumpSercomI2cm(SercomI2cm* sci) {
                 ctrla.bit.INACTOUT, ctrla.bit.LOWTOUTEN);
                 
   SERCOM_I2CM_CTRLB_Type ctrlb;
-  ctrlb.reg = sci->CTRLB.reg;
+  ctrlb.reg = sc->I2CM.CTRLB.reg;
   Serial.printf("  CTRLB: 0x%x smen=%d qcen=%d cmd=%d ackact=%d\n",
                 ctrlb.reg, ctrlb.bit.SMEN, ctrlb.bit.QCEN, ctrlb.bit.CMD, ctrlb.bit.ACKACT);
   
   SERCOM_I2CM_CTRLC_Type ctrlc;
-  ctrlc.reg = sci->CTRLC.reg;
+  ctrlc.reg = sc->I2CM.CTRLC.reg;
   Serial.printf("  CTRLC: 0x%x  data32b=%d\n", ctrlc.reg, ctrlc.bit.DATA32B);
   
   SERCOM_I2CM_BAUD_Type baud;
-  baud.reg = sci->BAUD.reg;
+  baud.reg = sc->I2CM.BAUD.reg;
   Serial.printf("  BAUD: 0x%x baud=%d baudlow=%d hsbaud=%d hsbaudlow=%d\n",
                 baud.reg, baud.bit.BAUD, baud.bit.BAUDLOW, baud.bit.HSBAUD, baud.bit.HSBAUDLOW);
   
   SERCOM_I2CM_INTENSET_Type intenset;
-  intenset.reg = sci->INTENSET.reg;
+  intenset.reg = sc->I2CM.INTENSET.reg;
   Serial.printf("  INTENSET: 0x%x mb=%d sb=%d error=%d\n",
                 intenset.reg, intenset.bit.MB, intenset.bit.SB, intenset.bit.ERROR);
   
   SERCOM_I2CM_INTFLAG_Type intflag;
-  intflag.reg = sci->INTFLAG.reg;
+  intflag.reg = sc->I2CM.INTFLAG.reg;
   Serial.printf("  INTFLAG: 0x%x mb=%d sb=%d error=%d\n",
                 intflag.reg, intflag.bit.MB, intflag.bit.SB, intflag.bit.ERROR);
   
   SERCOM_I2CM_STATUS_Type status;
-  status.reg = sci->STATUS.reg;
+  status.reg = sc->I2CM.STATUS.reg;
   Serial.printf("  STATUS: 0x%x buserr=%d arblost=%d rxnack=%d busstate=%d [%s] ",
                 status.reg, status.bit.BUSERR, status.bit.ARBLOST, status.bit.RXNACK,
                 status.bit.BUSSTATE, i2cmBusState[status.bit.BUSSTATE]);
@@ -543,21 +587,21 @@ void SAMD51_Dumpster::dumpSercomI2cm(SercomI2cm* sci) {
                 status.bit.SEXTTOUT, status.bit.LENERR);
   
   SERCOM_I2CM_SYNCBUSY_Type sb;
-  sb.reg = sci->SYNCBUSY.reg;
+  sb.reg = sc->I2CM.SYNCBUSY.reg;
   Serial.printf("  SYNCBUSY: 0x%x swrst=%d enable=%d sysop=%d\n",
                 sb.reg, sb.bit.SWRST, sb.bit.ENABLE, sb.bit.SYSOP);
   
   SERCOM_I2CM_ADDR_Type addr;
-  addr.reg = sci->ADDR.reg;
+  addr.reg = sc->I2CM.ADDR.reg;
   Serial.printf("  ADDR: 0x%x addr 0x%x (%d) lenen=%d hs=%d tenbiten=%d len=%d\n",
                 addr.reg, addr.bit.ADDR, addr.bit.ADDR, addr.bit.LENEN,
                 addr.bit.HS, addr.bit.TENBITEN, addr.bit.LEN);
   
   SERCOM_I2CM_DATA_Type data;
-  data.reg = sci->DATA.reg;
+  data.reg = sc->I2CM.DATA.reg;
   Serial.printf("  DATA: 0x%x (%d)\n", data.reg, data.reg);
   
-  Serial.printf("  DBGCTRL: 0x%x dbgstop=%d\n", sci->DBGCTRL.reg, sci->DBGCTRL.bit.DBGSTOP);
+  Serial.printf("  DBGCTRL: 0x%x dbgstop=%d\n", sc->I2CM.DBGCTRL.reg, sc->I2CM.DBGCTRL.bit.DBGSTOP);
 }
 
 /*
